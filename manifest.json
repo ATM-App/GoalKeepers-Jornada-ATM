@@ -1,6 +1,6 @@
 {
-  "name": "Jornadas Competición ATM",
-  "short_name": "GoalKeeepersJornadaATM",
+  "name": "GoalKeepers Jornada ATM",
+  "short_name": "GK Jornadas ATM",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0d17",
