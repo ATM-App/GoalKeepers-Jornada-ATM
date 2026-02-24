@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GoalKeepers Jornada ATM</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#CB3524">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="ESCUDO ATM.png">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="ESCUDO ATM.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div class="ios-header-container">
+        <div class="header-top-row">
+            <div class="brand-box">
+                <img src="ESCUDO ATM.png" alt="Escudo" class="escudo-header">
+                <div class="brand-text">
+                    <h1 class="app-title">
+                        <span class="t-gk">GoalKeepers</span>
+                        <span class="t-jor">Jornada</span>
+                        <span class="t-atm">ATM</span>
+                    </h1>
+                    <div class="date-info">
+                        <h2 id="currentMonthLabel">CARGANDO...</h2>
+                        <span class="badge-week" id="currentWeekLabel">...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="right-buttons">
+                <button class="theme-toggle" id="pdfBtn" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i></button>
+                <button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+            </div>
+        </div>
+        
+        <div class="nav-row">
+            <div class="nav-arrows-group">
+                <button class="nav-btn" onclick="changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="nav-btn" onclick="changeDate(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="view-switcher">
+                <div id="btnWeek" class="switch-item active" onclick="switchView('week')">Semana</div>
+                <div id="btnMonth" class="switch-item" onclick="switchView('month')">Mes</div>
+            </div>
+        </div>
+        
+        <div id="datesContainer" class="ios-date-strip"></div>
+    </div>
+
+    <main class="agenda-feed" id="pdf-content"></main>
+
+    <div class="floating-nav">
+        <button id="addStatusBtn" class="status-btn" onclick="openStatusModal()">📋</button>
+        <button id="addMatchBtn" class="match-btn" onclick="openMatchModal()">⚽</button>
+    </div>
+
+    <div id="saveFeedback" class="save-feedback-overlay">
+        <div class="feedback-content"><span class="feedback-icon" id="feedbackEmoji">✅</span><p id="feedbackText">Guardado</p></div>
+    </div>
+
+    <div id="newMatchModal" class="ios-modal-overlay">
+        <div class="ios-sheet">
+            <div class="sheet-header">
+                <div class="sheet-controls">
+                    <button class="btn-text cancel" onclick="closeModal('newMatchModal')">Cancelar</button>
+                    <span class="sheet-title" id="modalTitle">Nuevo Partido</span>
+                    <button class="btn-text save" onclick="saveMatch()">Guardar</button>
+                </div>
+            </div>
+            <div class="sheet-body">
+                <div class="form-section">
+                    <label class="input-label">🛡️ EQUIPO, RIVAL Y COMPETICIÓN</label>
+                    <div class="row-inputs">
+                        <input type="text" id="inputTeam" placeholder="Tu Equipo" class="ios-input">
+                        <input type="text" id="inputRival" placeholder="Rival" class="ios-input">
+                    </div>
+                    <div class="row-inputs" style="margin-top: 6px;">
+                        <select id="inputComp" class="ios-input">
+                            <option value="LIGA">LIGA</option>
+                            <option value="AMISTOSO">AMISTOSO</option>
+                            <option value="TORNEO">TORNEO</option>
+                            <option value="COPA">COPA</option>
+                        </select>
+                        <select id="inputJornada" class="ios-input">
+                            <option value="" disabled selected>Nº Jornada</option>
+                            </select>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label class="input-label">📅 FECHA Y HORA ⏰</label>
+                    <div class="row-inputs">
+                        <input type="date" id="inputDate" class="ios-input">
+                        <input type="time" id="inputTime" class="ios-input">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label class="input-label">🏟️ LUGAR</label>
+                    <input type="text" id="inputPlace" placeholder="Campo / Estadio" class="ios-input">
+                </div>
+                <div class="form-section">
+                    <label class="input-label">🧤 PORTEROS</label>
+                    <div class="row-inputs">
+                        <input type="text" id="inputTitular" placeholder="Titular" class="ios-input">
+                        <input type="text" id="inputSuplente" placeholder="Suplente" class="ios-input">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label class="input-label">📝 OBSERVACIONES</label>
+                    <textarea id="inputMatchNotes" class="ios-input" rows="2" style="resize:none;" placeholder="Punto de encuentro, ropa, etc..."></textarea>
+                </div>
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="newStatusModal" class="ios-modal-overlay">
+        <div class="ios-sheet">
+            <div class="sheet-header">
+                <div class="sheet-controls">
+                    <button class="btn-text cancel" onclick="closeModal('newStatusModal')">Cancelar</button>
+                    <span class="sheet-title" id="statusModalTitle">Estado Porteros</span>
+                    <button class="btn-text save" onclick="saveStatus()">Guardar</button>
+                </div>
+            </div>
+            <div class="sheet-body">
+                <div class="form-section">
+                    <label class="input-label">🛡️ DATOS DEL EQUIPO</label>
+                    <div class="row-inputs">
+                        <input type="text" id="inputStatusTeam" placeholder="Ej: Cadete A" class="ios-input">
+                        <select id="inputStatusAvailable" class="ios-input" onchange="generateGKFields()">
+                            <option value="0" selected>0 Disponibles</option>
+                            <option value="1">1 Disponible</option>
+                            <option value="2">2 Disponibles</option>
+                            <option value="3">3 Disponibles</option>
+                            <option value="4">4 Disponibles</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label class="input-label">📅 FECHA DE REPORTE</label>
+                    <input type="date" id="inputStatusDate" class="ios-input">
+                </div>
+
+                <div id="gkDynamicContainer" style="margin-bottom: 18px;"></div>
+
+                <div class="form-section">
+                    <label class="input-label">📝 OBSERVACIÓN GENERAL DEL EQUIPO</label>
+                    <textarea id="inputStatusNotes" class="ios-input" rows="2" style="resize:none;" placeholder="Dinámica del grupo, notas globales..."></textarea>
+                </div>
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // NUEVA CONFIGURACIÓN DE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPpDjMO5bHuSYvH8cVS5tUF_L7aSKHT8g",
+            authDomain: "jornadas-atm-f41b7.firebaseapp.com",
+            databaseURL: "https://jornadas-atm-f41b7-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "jornadas-atm-f41b7",
+            storageBucket: "jornadas-atm-f41b7.firebasestorage.app",
+            messagingSenderId: "933790154854",
+            appId: "1:933790154854:web:0ec9b0ee6479c47ac6eda7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let matchesDB = {};
+        let statusDB = {};
+
+        window.currentDate = new Date();
+        window.viewMode = 'week';
+        window.currentEditingMatchId = null;
+        window.currentEditingStatusId = null;
+
+        // Generar opciones de jornada 1 a 40
+        const jornadaSelect = document.getElementById('inputJornada');
+        for (let i = 1; i <= 40; i++) {
+            jornadaSelect.innerHTML += `<option value="${i}">${i}</option>`;
+        }
+
+        if (localStorage.getItem('atm_theme') === 'light') { 
+            document.body.classList.add('light-mode'); 
+            document.getElementById('themeIcon').className = 'fas fa-sun'; 
+        }
+
+        onValue(ref(db, 'gk_matches'), (snapshot) => { matchesDB = snapshot.val() || {}; window.renderAll(); });
+        onValue(ref(db, 'gk_status'), (snapshot) => { statusDB = snapshot.val() || {}; window.renderAll(); });
+
+        // LOGICA DE CAMPOS DINÁMICOS PORTEROS
+        window.generateGKFields = (count = null, data = null) => {
+            const container = document.getElementById('gkDynamicContainer');
+            const num = count !== null ? count : parseInt(document.getElementById('inputStatusAvailable').value) || 0;
+            container.innerHTML = '';
+            
+            for(let i=0; i<num; i++) {
+                const gk = data && data[i] ? data[i] : {name: '', condition: 'Perfecto Estado', notes: ''};
+                container.innerHTML += `
+                    <div style="background:var(--input-bg); padding:12px; border-radius:12px; margin-top:10px; border:1px solid var(--input-border);">
+                        <label class="input-label" style="color:var(--text-main);">🧤 PORTERO ${i+1}</label>
+                        <input type="text" id="gkName_${i}" placeholder="Nombre del Portero" class="ios-input" value="${gk.name}">
+                        <select id="gkCondition_${i}" class="ios-input">
+                            <option value="Perfecto Estado" ${gk.condition==='Perfecto Estado'?'selected':''}>✅ Perfecto Estado</option>
+                            <option value="Lesionado" ${gk.condition==='Lesionado'?'selected':''}>🤕 Lesionado</option>
+                            <option value="Ausencia" ${gk.condition==='Ausencia'?'selected':''}>❌ Ausencia</option>
+                        </select>
+                        <textarea id="gkNotes_${i}" class="ios-input" rows="1" style="resize:none;" placeholder="Observación individual...">${gk.notes}</textarea>
+                    </div>
+                `;
+            }
+        };
+
+        window.downloadPDF = () => {  
+            const element = document.getElementById('pdf-content');
+            if (element.innerText.includes('No hay datos para este día')) return alert('No hay información en este día para descargar.');
+            const btn = document.getElementById('pdfBtn'); const originalIcon = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            const actionButtons = element.querySelectorAll('.card-actions'); actionButtons.forEach(el => el.style.display = 'none');
+            const header = document.createElement('div'); header.id = 'temp-pdf-header';
+            const dateStr = window.currentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            header.innerHTML = `<div style="display:flex; align-items:center; gap:15px; margin-bottom:25px; padding-bottom:15px; border-bottom:3px solid var(--atm-red);"><img src="ESCUDO ATM.png" style="width:60px; height:60px; object-fit:contain;"><div><h1 style="margin:0; font-size:1.8rem; color:var(--text-main); font-weight:800;">GoalKeepers Report</h1><p style="margin:0; font-size:1rem; color:var(--text-sec); text-transform:capitalize; margin-top:5px;">${dateStr}</p></div></div>`;
+            element.insertBefore(header, element.firstChild);
+            html2pdf().set({ margin: 15, filename: `GK_Report_${window.currentDate.toISOString().split('T')[0]}.pdf`, image: { type: 'png' }, html2canvas: { scale: 4, letterRendering: true, useCORS: true, backgroundColor: document.body.classList.contains('light-mode') ? '#f2f4f8' : '#0b0d17' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { actionButtons.forEach(el => el.style.display = 'flex'); document.getElementById('temp-pdf-header').remove(); btn.innerHTML = originalIcon; }).catch(err => { actionButtons.forEach(el => el.style.display = 'flex'); document.getElementById('temp-pdf-header').remove(); btn.innerHTML = originalIcon; alert("Error en procesamiento PDF."); });
+        };
+
+        // --- PARTIDOS ---
+        window.openMatchModal = () => {
+            window.currentEditingMatchId = null;
+            document.getElementById('modalTitle').innerText = "Nuevo Partido";
+            document.getElementById('inputTeam').value = "";
+            document.getElementById('inputRival').value = "";
+            document.getElementById('inputComp').value = "LIGA";
+            document.getElementById('inputJornada').value = "";
+            document.getElementById('inputDate').value = window.currentDate.toISOString().split('T')[0];
+            document.getElementById('inputTime').value = "10:00";
+            document.getElementById('inputPlace').value = "";
+            document.getElementById('inputTitular').value = "";
+            document.getElementById('inputSuplente').value = "";
+            document.getElementById('inputMatchNotes').value = "";
+            document.getElementById('newMatchModal').classList.add('open');
+        };
+
+        window.saveMatch = () => {
+            const team = document.getElementById('inputTeam').value;
+            const dateStr = document.getElementById('inputDate').value;
+            if(!team || !dateStr) return alert("Equipo y Fecha son obligatorios");
+
+            const matchData = {
+                team: team,
+                rival: document.getElementById('inputRival').value,
+                comp: document.getElementById('inputComp').value,
+                jornada: document.getElementById('inputJornada').value,
+                date: dateStr,
+                time: document.getElementById('inputTime').value,
+                place: document.getElementById('inputPlace').value,
+                titular: document.getElementById('inputTitular').value,
+                suplente: document.getElementById('inputSuplente').value,
+                notes: document.getElementById('inputMatchNotes').value
+            };
+
+            let savePromise = window.currentEditingMatchId ? set(ref(db, `gk_matches/${dateStr}/${window.currentEditingMatchId}`), matchData) : push(ref(db, `gk_matches/${dateStr}`), matchData);
+            savePromise.then(() => { window.closeModal('newMatchModal'); showFeedback("⚽", "Partido Guardado"); window.currentDate = new Date(dateStr + "T12:00:00"); window.renderAll(); }).catch(e => alert("Error: " + e.message));
+        };
+
+        window.editMatch = (date, id) => {
+            const item = matchesDB[date][id];
+            window.currentEditingMatchId = id;
+            document.getElementById('modalTitle').innerText = "Editar Partido";
+            document.getElementById('inputTeam').value = item.team;
+            document.getElementById('inputRival').value = item.rival || "";
+            document.getElementById('inputComp').value = item.comp || "LIGA";
+            document.getElementById('inputJornada').value = item.jornada || "";
+            document.getElementById('inputDate').value = item.date;
+            document.getElementById('inputTime').value = item.time;
+            document.getElementById('inputPlace').value = item.place;
+            document.getElementById('inputTitular').value = item.titular || "";
+            document.getElementById('inputSuplente').value = item.suplente || "";
+            document.getElementById('inputMatchNotes').value = item.notes || "";
+            document.getElementById('newMatchModal').classList.add('open');
+        };
+
+        window.deleteMatch = (date, id) => { if(confirm("¿Eliminar este partido?")) remove(ref(db, `gk_matches/${date}/${id}`)); };
+
+        // --- ESTADO PORTEROS ---
+        window.openStatusModal = () => {
+            window.currentEditingStatusId = null;
+            document.getElementById('statusModalTitle').innerText = "Reportar Estado";
+            document.getElementById('inputStatusTeam').value = "";
+            document.getElementById('inputStatusAvailable').value = "0";
+            document.getElementById('inputStatusDate').value = window.currentDate.toISOString().split('T')[0];
+            document.getElementById('inputStatusNotes').value = "";
+            window.generateGKFields(0);
+            document.getElementById('newStatusModal').classList.add('open');
+        };
+
+        window.saveStatus = () => {
+            const team = document.getElementById('inputStatusTeam').value;
+            const dateStr = document.getElementById('inputStatusDate').value;
+            const numGk = parseInt(document.getElementById('inputStatusAvailable').value) || 0;
+            if(!team || !dateStr) return alert("Equipo y Fecha son obligatorios");
+
+            let gks = [];
+            for(let i=0; i<numGk; i++) {
+                gks.push({
+                    name: document.getElementById(`gkName_${i}`).value || 'Sin nombre',
+                    condition: document.getElementById(`gkCondition_${i}`).value,
+                    notes: document.getElementById(`gkNotes_${i}`).value
+                });
+            }
+
+            const statusData = {
+                team: team,
+                available: numGk,
+                date: dateStr,
+                gks: gks,
+                notes: document.getElementById('inputStatusNotes').value
+            };
+
+            let savePromise = window.currentEditingStatusId ? set(ref(db, `gk_status/${dateStr}/${window.currentEditingStatusId}`), statusData) : push(ref(db, `gk_status/${dateStr}`), statusData);
+            savePromise.then(() => { window.closeModal('newStatusModal'); showFeedback("📋", "Reporte Guardado"); window.currentDate = new Date(dateStr + "T12:00:00"); window.renderAll(); }).catch(e => alert("Error: " + e.message));
+        };
+
+        window.editStatus = (date, id) => {
+            const item = statusDB[date][id];
+            window.currentEditingStatusId = id;
+            document.getElementById('statusModalTitle').innerText = "Editar Reporte";
+            document.getElementById('inputStatusTeam').value = item.team;
+            document.getElementById('inputStatusAvailable').value = item.available || "0";
+            document.getElementById('inputStatusDate').value = item.date;
+            document.getElementById('inputStatusNotes').value = item.notes || "";
+            window.generateGKFields(item.available || 0, item.gks || []);
+            document.getElementById('newStatusModal').classList.add('open');
+        };
+
+        window.deleteStatus = (date, id) => { if(confirm("¿Eliminar este reporte?")) remove(ref(db, `gk_status/${date}/${id}`)); };
+
+        // --- COMPARTIR WHATSAPP ---
+        window.sendWhatsAppMatch = (date, id) => {
+            const item = matchesDB[date][id];
+            let msg = `⚽ *GOALKEEPER JORNADA ATM*%0A` +
+                      `🆚 *Rival:* ${item.rival || '-'}%0A` +
+                      `🏆 *Competición:* ${item.comp || 'LIGA'}${item.jornada ? ` (Jor. ${item.jornada})` : ''}%0A` +
+                      `🔴 *Equipo:* ${item.team}%0A` +
+                      `📅 *Fecha:* ${item.date}%0A` +
+                      `⏰ *Hora:* ${item.time}%0A` +
+                      `🏟️ *Lugar:* ${item.place}%0A%0A` +
+                      `🧤 *Titular:* ${item.titular || '-'}%0A` +
+                      `🧤 *Suplente:* ${item.suplente || '-'}`;
+            
+            if(item.notes) msg += `%0A%0A📝 *Observaciones:* ${item.notes}`;
+
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+        };
+
+        window.sendWhatsAppStatus = (date, id) => {
+            const item = statusDB[date][id];
+            let msg = `📋 *REPORTE ESTADO PORTEROS*%0A` +
+                      `🔴 *Equipo:* ${item.team}%0A` +
+                      `✅ *Disponibles:* ${item.available}%0A%0A`;
+            
+            if(item.gks && item.gks.length > 0) {
+                item.gks.forEach(gk => {
+                    let icon = gk.condition === 'Perfecto Estado' ? '✅' : (gk.condition === 'Lesionado' ? '🤕' : '❌');
+                    msg += `👤 *${gk.name}* - ${icon} ${gk.condition}%0A`;
+                    if(gk.notes) msg += `↳ _${gk.notes}_%0A`;
+                });
+            }
+            if(item.notes) msg += `%0A📝 *Observación General:* ${item.notes}`;
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+        };
+
+        window.closeModal = (modalId) => document.getElementById(modalId).classList.remove('open');
+
+        // --- RENDERIZADO GENERAL ---
+        window.renderAll = () => {
+            const months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+            document.getElementById('currentMonthLabel').innerText = `${months[window.currentDate.getMonth()]} ${window.currentDate.getFullYear()}`;
+            
+            const jan1 = new Date(window.currentDate.getFullYear(), 0, 1);
+            const wNum = Math.ceil((((window.currentDate - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+            document.getElementById('currentWeekLabel').innerText = `SEMANA ${wNum}`;
+
+            const container = document.getElementById('datesContainer');
+            container.innerHTML = '';
+            let d = new Date(window.currentDate);
+            
+            let start = window.viewMode === 'week' ? new Date(d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1))) : new Date(window.currentDate.getFullYear(), window.currentDate.getMonth(), 1);
+            let limit = window.viewMode === 'week' ? 7 : new Date(window.currentDate.getFullYear(), window.currentDate.getMonth() + 1, 0).getDate();
+
+            for(let i=0; i<limit; i++) {
+                let temp = new Date(start);
+                window.viewMode === 'week' ? temp.setDate(start.getDate() + i) : temp.setDate(i + 1);
+                let k = temp.toISOString().split('T')[0];
+                let isSel = k === window.currentDate.toISOString().split('T')[0];
+                
+                let div = document.createElement('div');
+                div.className = `date-item ${isSel ? 'active' : ''}`;
+                div.onclick = () => { window.currentDate = temp; window.renderAll(); };
+                div.innerHTML = `<span class="day-name">${['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][temp.getDay()]}</span><span class="day-num">${temp.getDate()}</span>`;
+                
+                let indicators = '';
+                if(statusDB[k]) indicators += `<div class="dot-indicator" style="background: #2ecc71;"></div>`; 
+                if(matchesDB[k]) indicators += `<div class="dot-indicator" style="background: var(--atm-red);"></div>`; 
+                if(indicators) div.innerHTML += `<div style="display:flex; gap:3px; margin-top:4px;">${indicators}</div>`;
+                
+                container.appendChild(div);
+            }
+
+            const feed = document.querySelector('.agenda-feed');
+            const dayKey = window.currentDate.toISOString().split('T')[0];
+            
+            const matchData = matchesDB[dayKey] ? Object.entries(matchesDB[dayKey]).map(([id, item]) => ({id, type: 'match', ...item})) : [];
+            const statusData = statusDB[dayKey] ? Object.entries(statusDB[dayKey]).map(([id, item]) => ({id, type: 'status', ...item})) : [];
+            const combinedData = [...statusData, ...matchData];
+
+            feed.innerHTML = combinedData.length ? '' : `<div class="empty-state centered"><span class="empty-icon">🏟️</span><h3>No hay datos para este día</h3></div>`;
+            
+            combinedData.forEach((item) => {
+                if(item.type === 'match') {
+                    feed.innerHTML += `
+                    <div class="agenda-card">
+                        <div class="modern-card" style="border-left: 5px solid var(--atm-red);">
+                            <div class="card-header-row">
+                                <span class="badge">⏰ ${item.time}</span>
+                                <span style="font-size:0.75rem; color:var(--text-sec); font-weight:700;">${item.comp || 'LIGA'} ${item.jornada ? `(JOR. ${item.jornada})` : ''}</span>
+                            </div>
+                            <h3 class="card-title">⚽ ${item.team} <span style="font-weight:400; font-size:0.9rem;">vs</span> ${item.rival || 'Rival'}</h3>
+                            <p class="card-subtitle">🏟️ ${item.place}</p>
+                            <div style="margin-top: 10px; font-size: 0.85rem; background: var(--input-bg); padding:10px; border-radius:8px;">
+                                <p style="color:var(--text-main);">🧤 <b>Titular:</b> ${item.titular || '-'}</p>
+                                <p style="color:var(--text-main); margin-top:4px;">🧤 <b>Suplente:</b> ${item.suplente || '-'}</p>
+                            </div>
+                            ${item.notes ? `<div class="notes-box">📝 ${item.notes}</div>` : ''}
+                            <div class="card-actions">
+                                <button class="btn-ios-action whatsapp-btn" onclick="sendWhatsAppMatch('${dayKey}','${item.id}')"><i class="fab fa-whatsapp"></i></button>
+                                <button class="btn-ios-action secondary" onclick="editMatch('${dayKey}','${item.id}')"><i class="fas fa-pen"></i></button>
+                                <button class="btn-ios-action secondary" onclick="deleteMatch('${dayKey}','${item.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+                } else if(item.type === 'status') {
+                    let gksHtml = '';
+                    if(item.gks && item.gks.length > 0) {
+                        item.gks.forEach(gk => {
+                            let icon = gk.condition === 'Perfecto Estado' ? '✅' : (gk.condition === 'Lesionado' ? '🤕' : '❌');
+                            gksHtml += `<div style="margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--input-border);">
+                                <p style="color:var(--text-main); font-size: 0.9rem;">👤 <b>${gk.name}</b></p>
+                                <p style="color:var(--text-main); font-size: 0.85rem; margin-top:2px;">${icon} ${gk.condition}</p>
+                                ${gk.notes ? `<p style="color:var(--text-sec); font-size: 0.8rem; font-style: italic; margin-top:2px;">↳ ${gk.notes}</p>` : ''}
+                            </div>`;
+                        });
+                    }
+
+                    feed.innerHTML += `
+                    <div class="agenda-card">
+                        <div class="modern-card" style="border-left: 5px solid #2ecc71;">
+                            <div class="card-header-row">
+                                <span class="badge" style="background:#2ecc71;">📋 REPORTE</span>
+                                <span style="font-size:0.75rem; color:var(--text-sec); font-weight:700;">DISP: ${item.available || 0}</span>
+                            </div>
+                            <h3 class="card-title">🛡️ ${item.team}</h3>
+                            <div style="margin-top: 10px;">
+                                ${gksHtml}
+                            </div>
+                            ${item.notes ? `<div class="notes-box"><b>Nota General:</b> ${item.notes}</div>` : ''}
+                            <div class="card-actions">
+                                <button class="btn-ios-action whatsapp-btn" onclick="sendWhatsAppStatus('${dayKey}','${item.id}')"><i class="fab fa-whatsapp"></i></button>
+                                <button class="btn-ios-action secondary" onclick="editStatus('${dayKey}','${item.id}')"><i class="fas fa-pen"></i></button>
+                                <button class="btn-ios-action secondary" onclick="deleteStatus('${dayKey}','${item.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+            });
+        };
+
+        window.changeDate = (dir) => { window.currentDate.setDate(window.currentDate.getDate() + (dir*7)); window.renderAll(); };
+        window.switchView = (m) => { window.viewMode = m; document.getElementById('btnWeek').classList.toggle('active', m === 'week'); document.getElementById('btnMonth').classList.toggle('active', m === 'month'); window.renderAll(); };
+        window.toggleTheme = () => { document.body.classList.toggle('light-mode'); const isLight = document.body.classList.contains('light-mode'); document.getElementById('themeIcon').className = isLight ? 'fas fa-sun' : 'fas fa-moon'; localStorage.setItem('atm_theme', isLight ? 'light' : 'dark'); };
+
+        function showFeedback(emoji, text) {
+            document.getElementById('feedbackEmoji').innerText = emoji;
+            document.getElementById('feedbackText').innerText = text;
+            const f = document.getElementById('saveFeedback'); f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 1500);
+        }
+        
+        window.renderAll();
+    </script>
+</body>
+</html>
