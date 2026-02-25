@@ -1,9 +1,10 @@
-const CACHE_NAME = 'gk-atm-v1';
+const CACHE_NAME = 'gk-atm-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './ESCUDO ATM.png',
+  './ICONO_APP.png',
   './manifest.json'
 ];
 

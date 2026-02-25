@@ -8,10 +8,11 @@
     <meta name="theme-color" content="#CB3524">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="ESCUDO ATM.png">
+    
+    <link rel="apple-touch-icon" href="ICONO_APP.png">
+    <link rel="icon" type="image/png" href="ICONO_APP.png">
     
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="ESCUDO ATM.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -90,7 +91,7 @@
                         </select>
                         <select id="inputJornada" class="ios-input">
                             <option value="" disabled selected>Nº Jornada</option>
-                            </select>
+                        </select>
                     </div>
                 </div>
                 <div class="form-section">
@@ -164,7 +165,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // NUEVA CONFIGURACIÓN DE FIREBASE (SIN CADUCIDAD)
         const firebaseConfig = {
             apiKey: "AIzaSyCPpDjMO5bHuSYvH8cVS5tUF_L7aSKHT8g",
             authDomain: "jornadas-atm-f41b7.firebaseapp.com",
@@ -186,7 +186,6 @@
         window.currentEditingMatchId = null;
         window.currentEditingStatusId = null;
 
-        // Generar opciones de jornada 1 a 40
         const jornadaSelect = document.getElementById('inputJornada');
         for (let i = 1; i <= 40; i++) {
             jornadaSelect.innerHTML += `<option value="${i}">${i}</option>`;
@@ -200,7 +199,6 @@
         onValue(ref(db, 'gk_matches'), (snapshot) => { matchesDB = snapshot.val() || {}; window.renderAll(); });
         onValue(ref(db, 'gk_status'), (snapshot) => { statusDB = snapshot.val() || {}; window.renderAll(); });
 
-        // LOGICA DE CAMPOS DINÁMICOS PORTEROS
         window.generateGKFields = (count = null, data = null) => {
             const container = document.getElementById('gkDynamicContainer');
             const num = count !== null ? count : parseInt(document.getElementById('inputStatusAvailable').value) || 0;
@@ -230,12 +228,14 @@
             const actionButtons = element.querySelectorAll('.card-actions'); actionButtons.forEach(el => el.style.display = 'none');
             const header = document.createElement('div'); header.id = 'temp-pdf-header';
             const dateStr = window.currentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // EL PDF TAMBIÉN USA EL ESCUDO ORIGINAL
             header.innerHTML = `<div style="display:flex; align-items:center; gap:15px; margin-bottom:25px; padding-bottom:15px; border-bottom:3px solid var(--atm-red);"><img src="ESCUDO ATM.png" style="width:60px; height:60px; object-fit:contain;"><div><h1 style="margin:0; font-size:1.8rem; color:var(--text-main); font-weight:800;">GoalKeepers Report</h1><p style="margin:0; font-size:1rem; color:var(--text-sec); text-transform:capitalize; margin-top:5px;">${dateStr}</p></div></div>`;
+            
             element.insertBefore(header, element.firstChild);
             html2pdf().set({ margin: 15, filename: `GK_Report_${window.currentDate.toISOString().split('T')[0]}.pdf`, image: { type: 'png' }, html2canvas: { scale: 4, letterRendering: true, useCORS: true, backgroundColor: document.body.classList.contains('light-mode') ? '#f2f4f8' : '#0b0d17' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { actionButtons.forEach(el => el.style.display = 'flex'); document.getElementById('temp-pdf-header').remove(); btn.innerHTML = originalIcon; }).catch(err => { actionButtons.forEach(el => el.style.display = 'flex'); document.getElementById('temp-pdf-header').remove(); btn.innerHTML = originalIcon; alert("Error en procesamiento PDF."); });
         };
 
-        // --- PARTIDOS ---
         window.openMatchModal = () => {
             window.currentEditingMatchId = null;
             document.getElementById('modalTitle').innerText = "Nuevo Partido";
@@ -293,7 +293,6 @@
 
         window.deleteMatch = (date, id) => { if(confirm("¿Eliminar este partido?")) remove(ref(db, `gk_matches/${date}/${id}`)); };
 
-        // --- ESTADO PORTEROS ---
         window.openStatusModal = () => {
             window.currentEditingStatusId = null;
             document.getElementById('statusModalTitle').innerText = "Reportar Estado";
@@ -346,7 +345,6 @@
 
         window.deleteStatus = (date, id) => { if(confirm("¿Eliminar este reporte?")) remove(ref(db, `gk_status/${date}/${id}`)); };
 
-        // --- COMPARTIR WHATSAPP ---
         window.sendWhatsAppMatch = (date, id) => {
             const item = matchesDB[date][id];
             let msg = `⚽ *GOALKEEPER JORNADA ATM*%0A` +
@@ -358,9 +356,7 @@
                       `🏟️ *Lugar:* ${item.place}%0A%0A` +
                       `🧤 *Titular:* ${item.titular || '-'}%0A` +
                       `🧤 *Suplente:* ${item.suplente || '-'}`;
-            
             if(item.notes) msg += `%0A%0A📝 *Observaciones:* ${item.notes}`;
-
             window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
         };
 
@@ -369,7 +365,6 @@
             let msg = `📋 *REPORTE ESTADO PORTEROS*%0A` +
                       `🔴 *Equipo:* ${item.team}%0A` +
                       `✅ *Disponibles:* ${item.available}%0A%0A`;
-            
             if(item.gks && item.gks.length > 0) {
                 item.gks.forEach(gk => {
                     let icon = gk.condition === 'Perfecto Estado' ? '✅' : (gk.condition === 'Lesionado' ? '🤕' : '❌');
@@ -383,7 +378,6 @@
 
         window.closeModal = (modalId) => document.getElementById(modalId).classList.remove('open');
 
-        // --- RENDERIZADO GENERAL ---
         window.renderAll = () => {
             const months = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
             document.getElementById('currentMonthLabel').innerText = `${months[window.currentDate.getMonth()]} ${window.currentDate.getFullYear()}`;
@@ -425,11 +419,10 @@
             const statusData = statusDB[dayKey] ? Object.entries(statusDB[dayKey]).map(([id, item]) => ({id, type: 'status', ...item})) : [];
             const combinedData = [...statusData, ...matchData];
 
-            // AQUÍ ORDENAMOS: Estado primero, y luego partidos por hora
             combinedData.sort((a, b) => {
-                if (a.time && b.time) return a.time.localeCompare(b.time); // Ambos son partidos
-                if (!a.time && b.time) return -1; // 'a' es Estado, va primero
-                if (a.time && !b.time) return 1;  // 'b' es Estado, va primero
+                if (a.time && b.time) return a.time.localeCompare(b.time); 
+                if (!a.time && b.time) return -1; 
+                if (a.time && !b.time) return 1;  
                 return 0;
             });
 
